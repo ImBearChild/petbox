@@ -1,2 +1,5 @@
 [workspace]
 members = ["crates/*"]
+
+[workspace.petbox]
+readme = "README.md"

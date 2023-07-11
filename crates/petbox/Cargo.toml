@@ -3,8 +3,10 @@ name = "petbox"
 version = "0.1.0"
 edition = "2021"
 license = "MPL-2.0"
-readme = "README.md"
 keywords = ["linux", "container", "namespace", "docker", "process"]
+description = """
+    a lightweight unprivliged namespace container tool
+"""
 homepage = "https://github.com/ImBearChild/petbox"
 documentation = "https://docs.rs/petbox"
 categories = ["os::unix-apis"]
@@ -13,13 +15,13 @@ categories = ["os::unix-apis"]
 
 [dependencies]
 clap = { version = "4.3", features = ["unicode", "derive"] }
-unshare_petbox = { path = "../unshare-petbox"}
+unshare_petbox = { path = "../unshare-petbox", version = "0.7" }
 xdg = "^2.1"
 env_logger = "0.10"
 #pretty_env_logger = "0.5"
 log = "0.4"
 libc = "0.2"
-nix = { version = "^0.26",features = ["user"] }
+nix = { version = "^0.26", features = ["user"] }
 thiserror = "1.0"
 
 [[bin]]
