@@ -8,7 +8,7 @@ pub struct Config {
 
 impl Config {
     pub fn build() -> Self {
-        let mut data_dir;
+        let data_dir;
         match std::env::var("PETBOX_DATA_DIR") {
             Ok(dir) => data_dir = PathBuf::from(dir),
             Err(_) => {

@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate log;
 use std::path::Path;
-use clap::{ Args, CommandFactory, Parser, Subcommand};
+use clap::{ Args, Parser, Subcommand};
 use petbox::container;
 use petbox::config::Config;
 #[cfg(debug_assertions)]
@@ -65,17 +65,6 @@ struct Attach {
     #[arg(long)]
     /// Show this message
     help: bool,
-}
-
-fn opt_help(name: &str) {
-    let mut cmd = Cli::command_for_update();
-    let cmd = cmd.find_subcommand_mut(name).unwrap();
-    //let mut cmd = cmd.disable_help_flag(true);
-    cmd.set_bin_name(format!("petbox {name}"));
-    cmd.print_help().unwrap();
-    println!();
-    println!("Use `petbox help {name}` for detailed help message");
-    std::process::exit(0);
 }
 
 fn main() {
