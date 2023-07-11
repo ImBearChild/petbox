@@ -47,9 +47,9 @@ struct Create {
     /// Show this message
     help: (),
 
-    #[arg(long)]
+    ///#[arg(long)]
     /// Run without acutally modify on-disk file
-    dry_run: bool,
+    //dry_run: bool,
 
     #[arg(long)]
     /// Enter the namespace without extracting rootfs
@@ -83,8 +83,14 @@ fn main() {
     match &cli.command {
         Commands::Create(opt) => {
             let config = Config::build();
-            let path = config.get_container_rootfs(&opt.name);
-            container::install_rootfs(&path,Path::new(&opt.source),opt.dry_run,opt.enter_ns);
+            let root_path = config.get_container_rootfs(&opt.name);
+            let root = container::Rootfs::new(&root_path);
+            info!("Creating conatiner...");
+            trace!("path:{:?},tar_file:{:?}", root_path, opt.source);
+            match &opt.enter_ns {
+                true => {root.install_rootfs_enter_ns("/bin/bash");},
+                false => {root.install_rootfs_from_tar(Path::new(&opt.source));},
+            }
         }
         Commands::Attach(opt) => {
             println!("run")

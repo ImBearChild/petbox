@@ -1,9 +1,11 @@
 use std::{
     fs::{self, DirBuilder},
     io::{self, BufRead},
-    path::Path,
+    path::{Path, PathBuf},
 };
-use unshare_petbox::{GidMap, Namespace, UidMap};
+use unshare_petbox::{Command, GidMap, Namespace, UidMap};
+
+use thiserror::Error;
 
 #[derive(Debug)]
 struct SubXidMap {
@@ -90,43 +92,73 @@ fn gen_gidmap() -> Vec<GidMap> {
     mapvec
 }
 
-pub fn install_rootfs(path: &Path, tar_file: &Path, dry_run: bool, enter_ns: bool) {
-    info!("Creating conatiner...");
-    trace!("path:{:?},tar_file:{:?}", path, tar_file);
+#[derive(Error, Debug)]
+pub enum RootfsError {
+    #[error("cannot unshare namespace: `{0}`")]
+    UnshareFailed(unshare_petbox::Error),
+    #[error("failed to extract tar file: `{0}`")]
+    CommandFailed(String),
+    #[error("unknown data store error")]
+    Unknown,
+}
+pub struct Rootfs {
+    root_path: PathBuf,
+}
 
-    DirBuilder::new().recursive(true).create(path).unwrap();
-
-    let uid_map = gen_uidmap();
-    trace!("uidmap:");
-    trace!("{:#?}", uid_map);
-    let gid_map = gen_gidmap();
-    let mut cmd:unshare_petbox::Command;
-    match enter_ns {
-        true => { cmd = unshare_petbox::Command::new("/usr/bin/bash");},
-        false => {
-            cmd = unshare_petbox::Command::new("/usr/bin/tar");
-            cmd.arg("xf")
-                .arg(tar_file.as_os_str())
-                .arg("--directory")
-                .arg(path.as_os_str());
+impl Rootfs {
+    pub fn new(root_path: &Path) -> Self {
+        Self {
+            root_path: root_path.into(),
         }
     }
-    let mut namespaces = Vec::<Namespace>::new();
-    namespaces.push(Namespace::User);
-    cmd.set_id_maps(uid_map, gid_map)
-        .set_id_map_commands("/usr/bin/newuidmap", "/usr/bin/newgidmap");
-    cmd.unshare(&namespaces);
+    fn prepare_unshare_cmd(bin_name: &str) -> Command {
+        let mut cmd = unshare_petbox::Command::new(bin_name);
+        let mut namespaces = Vec::<Namespace>::new();
+        namespaces.push(Namespace::User);
+        let uid_map = gen_uidmap();
+        trace!("uidmap:");
+        trace!("{:#?}", uid_map);
+        let gid_map = gen_gidmap();
+        cmd.set_id_maps(uid_map, gid_map)
+            .set_id_map_commands("/usr/bin/newuidmap", "/usr/bin/newgidmap");
+        cmd.unshare(&namespaces);
 
-    cmd.uid(0);
-    cmd.gid(0);
-    if dry_run {
-        info!("Dry run mode. No changes have been applied.");
-        return;
+        cmd.uid(0);
+        cmd.gid(0);
+        cmd
     }
-    info!("");
-    match cmd.status().unwrap() {
-        // propagate signal
-        unshare_petbox::ExitStatus::Exited(x) => println!("{}", x),
-        unshare_petbox::ExitStatus::Signaled(x, _) => println!("{}", x),
+    pub fn install_rootfs_enter_ns(&self,bin_name: &str) -> Result<(), RootfsError> {
+        let mut cmd = Self::prepare_unshare_cmd(bin_name);
+        match cmd.status() {
+            Ok(r) => {
+                if r.success() {
+                    Ok(())
+                } else {
+                    Err(RootfsError::CommandFailed("F".to_string()))
+                }
+            }
+            Err(e) => Err(RootfsError::UnshareFailed(e)),
+        }
+    }
+    pub fn install_rootfs_from_tar(
+        &self,
+        tar_file: &Path,
+    ) -> Result<(), RootfsError> {
+        let mut cmd = Self::prepare_unshare_cmd("/bin/tar");
+        DirBuilder::new().recursive(true).create(&self.root_path).unwrap();
+        cmd.arg("xf")
+            .arg(tar_file.as_os_str())
+            .arg("--directory")
+            .arg(&self.root_path.as_os_str());
+        match cmd.status() {
+            Ok(r) => {
+                if r.success() {
+                    Ok(())
+                } else {
+                    Err(RootfsError::CommandFailed("F".to_string()))
+                }
+            }
+            Err(e) => Err(RootfsError::UnshareFailed(e)),
+        }
     }
 }

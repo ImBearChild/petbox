@@ -20,6 +20,7 @@ env_logger = "0.10"
 log = "0.4"
 libc = "0.2"
 nix = { version = "^0.26",features = ["user"] }
+thiserror = "1.0"
 
 [[bin]]
 name = "petbox"
