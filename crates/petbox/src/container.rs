@@ -90,7 +90,7 @@ fn gen_gidmap() -> Vec<GidMap> {
     mapvec
 }
 
-pub fn install_rootfs(path: &Path, tar_file: &Path, dry_run:bool) {
+pub fn install_rootfs(path: &Path, tar_file: &Path, dry_run: bool, enter_ns: bool) {
     info!("Creating conatiner...");
     trace!("path:{:?},tar_file:{:?}", path, tar_file);
 
@@ -100,22 +100,30 @@ pub fn install_rootfs(path: &Path, tar_file: &Path, dry_run:bool) {
     trace!("uidmap:");
     trace!("{:#?}", uid_map);
     let gid_map = gen_gidmap();
-    let mut cmd = unshare_petbox::Command::new("/usr/bin/tar");
+    let mut cmd:unshare_petbox::Command;
+    match enter_ns {
+        true => { cmd = unshare_petbox::Command::new("/usr/bin/bash");},
+        false => {
+            cmd = unshare_petbox::Command::new("/usr/bin/tar");
+            cmd.arg("xf")
+                .arg(tar_file.as_os_str())
+                .arg("--directory")
+                .arg(path.as_os_str());
+        }
+    }
     let mut namespaces = Vec::<Namespace>::new();
     namespaces.push(Namespace::User);
     cmd.set_id_maps(uid_map, gid_map)
         .set_id_map_commands("/usr/bin/newuidmap", "/usr/bin/newgidmap");
     cmd.unshare(&namespaces);
-    cmd.arg("xf")
-        .arg(tar_file.as_os_str())
-        .arg("--directory")
-        .arg(path.as_os_str());
+
     cmd.uid(0);
     cmd.gid(0);
     if dry_run {
         info!("Dry run mode. No changes have been applied.");
         return;
     }
+    info!("");
     match cmd.status().unwrap() {
         // propagate signal
         unshare_petbox::ExitStatus::Exited(x) => println!("{}", x),

@@ -1,14 +1,9 @@
-use std::path::Path;
-
-use clap::{ Args, CommandFactory, Parser, Subcommand};
-
-
-use crate::config::Config;
-mod config;
-mod container;
 #[macro_use]
 extern crate log;
-
+use std::path::Path;
+use clap::{ Args, CommandFactory, Parser, Subcommand};
+use petbox::container;
+use petbox::config::Config;
 #[cfg(debug_assertions)]
 const DEBUG_ENV: bool = true;
 
@@ -33,27 +28,32 @@ enum Commands {
 
 #[derive(Args)]
 struct Create {
-    //#[arg(short, long)]
+    #[arg()]
     /// Name of the container
     name: String,
 
-    //#[arg(short, long)]
+    #[arg()]
     /// Image to use for the container
-    image: String,
+    source: String,
 
     #[arg(short, long)]
     /// Sharing home directory with the container
     ///
     /// This will cause behaviour similar to distrobox
+    // TODO
     home: bool,
 
     #[arg(long,action = clap::ArgAction::Help)]
     /// Show this message
-    help: bool,
+    help: (),
 
     #[arg(long)]
-    // Run without acutally modify on-disk file
+    /// Run without acutally modify on-disk file
     dry_run: bool,
+
+    #[arg(long)]
+    /// Enter the namespace without extracting rootfs
+    enter_ns: bool,
 }
 
 #[derive(Args)]
@@ -93,12 +93,9 @@ fn main() {
     // matches just as you would the top level cmd
     match &cli.command {
         Commands::Create(opt) => {
-            if opt.help { // TODO: This may be deleted later
-                opt_help("create")
-            }
             let config = Config::build();
             let path = config.get_container_rootfs(&opt.name);
-            container::install_rootfs(&path,Path::new(&opt.image),true);
+            container::install_rootfs(&path,Path::new(&opt.source),opt.dry_run,opt.enter_ns);
         }
         Commands::Attach(opt) => {
             println!("run")

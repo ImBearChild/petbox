@@ -17,4 +17,9 @@ nix = { version = "^0.26",features = ["user"] }
 
 [[bin]]
 name = "petbox"
-path = "src/main.rs"
+path = "src/bin/petbox.rs"
+
+
+[lib]
+name = "petbox"
+path = "src/lib.rs"
