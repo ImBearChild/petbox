@@ -3,14 +3,14 @@ name = "unshare_petbox"
 description = """
     The low-level interface for linux namespaces (containers)
 """
-license = "MIT/Apache-2.0"
+license = "MPL-2.0"
 readme = "README.md"
 keywords = ["linux", "container", "namespace", "docker", "process"]
-homepage = "https://github.com/tailhook/unshare"
-documentation = "https://docs.rs/unshare"
+homepage = "https://github.com/ImBearChild/petbox"
+documentation = "https://docs.rs/unshare-petbox"
 categories = ["os::unix-apis"]
 version = "0.7.0"
-authors = ["paul@colomiets.name"]
+authors = ["imbearchild@outlook.com","paul@colomiets.name"]
 edition = "2018"
 
 [dependencies]
