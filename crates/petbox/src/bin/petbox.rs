@@ -1,9 +1,9 @@
 #[macro_use]
 extern crate log;
-use std::path::Path;
-use clap::{ Args, Parser, Subcommand};
-use petbox::container;
+use clap::{Args, Parser, Subcommand};
 use petbox::config::Config;
+use petbox::container;
+use std::path::Path;
 #[cfg(debug_assertions)]
 const DEBUG_ENV: bool = true;
 
@@ -70,10 +70,12 @@ struct Attach {
 fn main() {
     let mut logger: env_logger::Builder;
     if DEBUG_ENV {
-        logger = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"));
+        logger =
+            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"));
         warn!("You are using dev build of petbox compiled without optimization.")
     } else {
-        logger= env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"));
+        logger =
+            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"));
     }
     logger.format_timestamp(None).init();
     //let mut cmd = Cli::command_for_update();
@@ -88,8 +90,18 @@ fn main() {
             info!("Creating conatiner...");
             trace!("path:{:?},tar_file:{:?}", root_path, opt.source);
             match &opt.enter_ns {
-                true => {root.install_rootfs_enter_ns("/bin/bash");},
-                false => {root.install_rootfs_from_tar(Path::new(&opt.source));},
+                true => {
+                    match root.install_rootfs_enter_ns("/bin/bash") {
+                        Ok(_) => {},
+                        Err(e) => error!("Command failed: {e}"),
+                    };
+                }
+                false => {
+                    match root.install_rootfs_from_tar(Path::new(&opt.source)) {
+                        Ok(_) => {},
+                        Err(e) => { error!("Failed to extract rootfs: {e}") },
+                    };
+                }
             }
         }
         Commands::Attach(opt) => {

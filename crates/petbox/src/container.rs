@@ -4,8 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use unshare_petbox::{Command, GidMap, Namespace, UidMap};
-
-use thiserror::Error;
+use crate::error::Error;
 
 #[derive(Debug)]
 struct SubXidMap {
@@ -92,15 +91,7 @@ fn gen_gidmap() -> Vec<GidMap> {
     mapvec
 }
 
-#[derive(Error, Debug)]
-pub enum RootfsError {
-    #[error("cannot unshare namespace: `{0}`")]
-    UnshareFailed(unshare_petbox::Error),
-    #[error("failed to extract tar file: `{0}`")]
-    CommandFailed(String),
-    #[error("unknown data store error")]
-    Unknown,
-}
+
 pub struct Rootfs {
     root_path: PathBuf,
 }
@@ -127,23 +118,23 @@ impl Rootfs {
         cmd.gid(0);
         cmd
     }
-    pub fn install_rootfs_enter_ns(&self,bin_name: &str) -> Result<(), RootfsError> {
+    pub fn install_rootfs_enter_ns(&self,bin_name: &str) -> Result<(), Error> {
         let mut cmd = Self::prepare_unshare_cmd(bin_name);
         match cmd.status() {
             Ok(r) => {
                 if r.success() {
                     Ok(())
                 } else {
-                    Err(RootfsError::CommandFailed("F".to_string()))
+                    Err(Error::CommandFailed(bin_name.to_string()))
                 }
             }
-            Err(e) => Err(RootfsError::UnshareFailed(e)),
+            Err(e) => Err(Error::UnshareFailed(e)),
         }
     }
     pub fn install_rootfs_from_tar(
         &self,
         tar_file: &Path,
-    ) -> Result<(), RootfsError> {
+    ) -> Result<(), Error> {
         let mut cmd = Self::prepare_unshare_cmd("/bin/tar");
         DirBuilder::new().recursive(true).create(&self.root_path).unwrap();
         cmd.arg("xf")
@@ -155,10 +146,10 @@ impl Rootfs {
                 if r.success() {
                     Ok(())
                 } else {
-                    Err(RootfsError::CommandFailed("F".to_string()))
+                    Err(Error::CommandFailed("tar".to_string()))
                 }
             }
-            Err(e) => Err(RootfsError::UnshareFailed(e)),
+            Err(e) => Err(Error::UnshareFailed(e)),
         }
     }
 }
