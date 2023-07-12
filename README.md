@@ -15,7 +15,7 @@ Usage
 
 ```bash
 petbox create --name void --source ./void-x86_64-ROOTFS-20221001.tar.xz
-petbox run --name void -- /sbin/init
+petbox start --name void -- /sbin/init
 petbox exec --name void --tty /bin/sh
 ```
 

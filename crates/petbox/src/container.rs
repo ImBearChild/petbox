@@ -1,10 +1,10 @@
+use crate::error::Error;
 use std::{
     fs::{self, DirBuilder},
     io::{self, BufRead},
     path::{Path, PathBuf},
 };
 use unshare_petbox::{Command, GidMap, Namespace, UidMap};
-use crate::error::Error;
 
 #[derive(Debug)]
 struct SubXidMap {
@@ -91,7 +91,7 @@ fn gen_gidmap() -> Vec<GidMap> {
     mapvec
 }
 
-
+/// Class for dealing with rootfs
 pub struct Rootfs {
     root_path: PathBuf,
 }
@@ -102,8 +102,8 @@ impl Rootfs {
             root_path: root_path.into(),
         }
     }
-    fn prepare_unshare_cmd(bin_name: &str) -> Command {
-        let mut cmd = unshare_petbox::Command::new(bin_name);
+    fn prepare_unshare_cmd(program: &str) -> Command {
+        let mut cmd = unshare_petbox::Command::new(program);
         let mut namespaces = Vec::<Namespace>::new();
         namespaces.push(Namespace::User);
         let uid_map = gen_uidmap();
@@ -118,7 +118,7 @@ impl Rootfs {
         cmd.gid(0);
         cmd
     }
-    pub fn install_rootfs_enter_ns(&self,bin_name: &str) -> Result<(), Error> {
+    pub fn install_rootfs_enter_ns(&self, bin_name: &str) -> Result<(), Error> {
         let mut cmd = Self::prepare_unshare_cmd(bin_name);
         match cmd.status() {
             Ok(r) => {
@@ -131,12 +131,12 @@ impl Rootfs {
             Err(e) => Err(Error::UnshareFailed(e)),
         }
     }
-    pub fn install_rootfs_from_tar(
-        &self,
-        tar_file: &Path,
-    ) -> Result<(), Error> {
+    pub fn install_rootfs_from_tar(&self, tar_file: &Path) -> Result<(), Error> {
         let mut cmd = Self::prepare_unshare_cmd("/bin/tar");
-        DirBuilder::new().recursive(true).create(&self.root_path).unwrap();
+        DirBuilder::new()
+            .recursive(true)
+            .create(&self.root_path)
+            .unwrap();
         cmd.arg("xf")
             .arg(tar_file.as_os_str())
             .arg("--directory")
@@ -151,5 +151,46 @@ impl Rootfs {
             }
             Err(e) => Err(Error::UnshareFailed(e)),
         }
+    }
+}
+
+pub struct Container {
+    root_path: PathBuf,
+}
+
+impl Container {
+    fn prepare_unshare_cmd(program: &str) -> Command {
+        let mut cmd = unshare_petbox::Command::new(program);
+        let mut namespaces = Vec::<Namespace>::new();
+        namespaces.push(Namespace::User);
+        namespaces.push(Namespace::Mount);
+        namespaces.push(Namespace::Ipc);
+        namespaces.push(Namespace::Uts);
+        namespaces.push(Namespace::Pid);
+        namespaces.push(Namespace::Cgroup);
+        let uid_map = gen_uidmap();
+        trace!("uidmap:");
+        trace!("{:#?}", uid_map);
+        let gid_map = gen_gidmap();
+        cmd.set_id_maps(uid_map, gid_map)
+            .set_id_map_commands("/usr/bin/newuidmap", "/usr/bin/newgidmap");
+        cmd.unshare(&namespaces);
+
+        cmd.uid(0);
+        cmd.gid(0);
+        cmd
+    }
+    pub fn new(root_path: &Path) -> Self {
+        Self {
+            root_path: root_path.into(),
+        }
+    }
+    pub fn start(&self, program: &str, args: &[String]) -> Result<(), Error> {
+        let mut cmd = Self::prepare_unshare_cmd(program);
+        cmd.args(&args);
+        cmd.env_clear().chroot_dir(&self.root_path);
+        cmd.current_dir("/");
+        cmd.spawn().unwrap().wait().unwrap();
+        Ok(())
     }
 }

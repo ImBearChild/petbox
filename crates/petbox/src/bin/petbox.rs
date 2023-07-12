@@ -2,7 +2,7 @@
 extern crate log;
 use clap::{Args, Parser, Subcommand};
 use petbox::config::Config;
-use petbox::container;
+use petbox::container::{self, Container};
 use std::path::Path;
 #[cfg(debug_assertions)]
 const DEBUG_ENV: bool = true;
@@ -17,22 +17,30 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    #[command(disable_help_flag(true))]
+    #[command()]
     /// Create new petbox rootfs container
     Create(Create),
 
-    #[command(disable_help_flag(true))]
+    #[command()]
     /// Attach terminal to a running petbox container
     Attach(Attach),
+
+    #[command()]
+    /// Start petbox container
+    Start(Start),
+
+    #[command()]
+    /// Run program inside a running petbox container
+    Exec(Exec),
 }
 
 #[derive(Args)]
 struct Create {
-    #[arg()]
+    #[arg(short, long)]
     /// Name of the container
     name: String,
 
-    #[arg()]
+    #[arg(short, long)]
     /// Image to use for the container
     source: String,
 
@@ -43,28 +51,50 @@ struct Create {
     // TODO
     home: bool,
 
-    #[arg(long,action = clap::ArgAction::Help)]
-    /// Show this message
-    help: (),
-
-    ///#[arg(long)]
-    /// Run without acutally modify on-disk file
-    //dry_run: bool,
-
     #[arg(long)]
     /// Enter the namespace without extracting rootfs
     enter_ns: bool,
+
+    #[arg(long,action = clap::ArgAction::Help)]
+    /// Show this message
+    help: (),
 }
 
 #[derive(Args)]
 struct Attach {
     #[arg(short, long)]
     /// Name of the container
-    name: Option<String>,
+    name: String,
 
     #[arg(long)]
     /// Show this message
     help: bool,
+}
+
+#[derive(Args)]
+struct Start{
+    #[arg(short, long)]
+    /// Name of the container
+    name: String,
+
+    #[arg(short, long)]
+    /// Command to execute
+    command: Vec<String>,
+
+    #[arg(long,action = clap::ArgAction::Help)]
+    /// Show this message
+    help: (),
+}
+
+#[derive(Args)]
+struct Exec{
+    #[arg(short, long)]
+    /// Name of the container
+    name: String,
+
+    #[arg(long,action = clap::ArgAction::Help)]
+    /// Show this message
+    help: (),
 }
 
 fn main() {
@@ -80,8 +110,6 @@ fn main() {
     logger.format_timestamp(None).init();
     //let mut cmd = Cli::command_for_update();
     let cli = Cli::parse();
-    // You can check for the existence of subcommands, and if found use their
-    // matches just as you would the top level cmd
     match &cli.command {
         Commands::Create(opt) => {
             let config = Config::build();
@@ -105,7 +133,16 @@ fn main() {
             }
         }
         Commands::Attach(opt) => {
-            println!("run")
+            info!("Attach to `{}`",opt.name);
+            todo!()
         }
+        Commands::Start(opt) => {
+            info!("Starting `{}`, `{:?}`",opt.name,opt.command);
+            let config = Config::build();
+            let root_path = config.get_container_rootfs(&opt.name);
+            let mut cbox = Container::new(&root_path);
+            cbox.start(&opt.command[0], &opt.command[1..]);
+        },
+        Commands::Exec(_) => todo!(),
     }
 }
