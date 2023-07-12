@@ -13,10 +13,20 @@ A pet container is different from conventional "cattle" container. User will nam
 Usage
 ---
 
+Here is an example of starting voidlinux in the form of "system container":
+
 ```bash
 petbox create --name void --source ./void-x86_64-ROOTFS-20221001.tar.xz
-petbox start --name void -- /sbin/init
+petbox run --name void -- /sbin/init
 petbox exec --name void --tty /bin/sh
+```
+
+or you can try a more lightweight way:
+
+```bash
+petbox create --name void --source ./void-x86_64-ROOTFS-20221001.tar.xz
+petbox run --name void -- /bin/sh -c "sleep +Inf"
+petbox exec --name void --tty --nsenter -- /bin/sh
 ```
 
 ---

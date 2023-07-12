@@ -22,15 +22,24 @@ enum Commands {
     Create(Create),
 
     #[command()]
-    /// Attach terminal to a running petbox container
-    Attach(Attach),
+    /// Run a command in a petbox container
+    ///
+    /// Run a process in a petbox container with new namespace
+    /// This sub-command will always create a new namespace, so you may not
+    /// want to use this command directly
+    Run(Run),
 
     #[command()]
-    /// Start petbox container
+    /// Start a container and put it in background
+    ///
+    /// You may not want to use this command directly
     Start(Start),
 
     #[command()]
-    /// Run program inside a running petbox container
+    /// Run a program inside a a petbox container
+    ///
+    /// This sub-command will try to use existent namespace,
+    /// and will start one when appropriate
     Exec(Exec),
 }
 
@@ -72,22 +81,29 @@ struct Attach {
 }
 
 #[derive(Args)]
-struct Start{
+struct Run {
     #[arg(short, long)]
     /// Name of the container
     name: String,
 
-    #[arg(short, long)]
-    /// Command to execute
-    command: Vec<String>,
-
     #[arg(long,action = clap::ArgAction::Help)]
     /// Show this message
     help: (),
+
+    #[arg(last = true)]
+    /// Command to execute
+    command: Vec<String>,
 }
 
 #[derive(Args)]
-struct Exec{
+struct Start {
+    #[arg(short, long)]
+    /// Name of the container
+    name: String,
+}
+
+#[derive(Args)]
+struct Exec {
     #[arg(short, long)]
     /// Name of the container
     name: String,
@@ -120,29 +136,32 @@ fn main() {
             match &opt.enter_ns {
                 true => {
                     match root.install_rootfs_enter_ns("/bin/bash") {
-                        Ok(_) => {},
+                        Ok(_) => {}
                         Err(e) => error!("Command failed: {e}"),
                     };
                 }
                 false => {
                     match root.install_rootfs_from_tar(Path::new(&opt.source)) {
-                        Ok(_) => {},
-                        Err(e) => { error!("Failed to extract rootfs: {e}") },
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!("Failed to extract rootfs: {e}")
+                        }
                     };
                 }
             }
         }
         Commands::Attach(opt) => {
-            info!("Attach to `{}`",opt.name);
+            info!("Attach to `{}`", opt.name);
             todo!()
         }
-        Commands::Start(opt) => {
-            info!("Starting `{}`, `{:?}`",opt.name,opt.command);
+        Commands::Run(opt) => {
+            info!("Starting `{}`, `{:?}`", opt.name, opt.command);
             let config = Config::build();
             let root_path = config.get_container_rootfs(&opt.name);
             let mut cbox = Container::new(&root_path);
             cbox.start(&opt.command[0], &opt.command[1..]);
-        },
+        }
         Commands::Exec(_) => todo!(),
+        Commands::Start(_) => todo!(),
     }
 }
