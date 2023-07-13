@@ -21,19 +21,23 @@ enum Commands {
     /// Create new petbox rootfs container
     Create(Create),
 
-    #[command()]
-    /// Run a command in a petbox container
+    #[command(subcommand)]
+    /// Low-level container runtime
     ///
     /// Run a process in a petbox container with new namespace
     /// This sub-command will always create a new namespace, so you may not
     /// want to use this command directly
-    Run(Run),
+    Wrap(Wrap),
 
     #[command()]
     /// Start a container and put it in background
-    ///
-    /// You may not want to use this command directly
     Start(Start),
+
+    #[command(subcommand)]
+    /// Low-level container monitor utility
+    /// 
+    /// You may not want to use this command directly
+    Cmon(Cmon),
 
     #[command()]
     /// Run a program inside a a petbox container
@@ -41,6 +45,16 @@ enum Commands {
     /// This sub-command will try to use existent namespace,
     /// and will start one when appropriate
     Exec(Exec),
+}
+
+#[derive(Subcommand)]
+enum Wrap {
+    
+}
+
+#[derive(Subcommand)]
+enum Cmon {
+    
 }
 
 #[derive(Args)]
@@ -150,18 +164,11 @@ fn main() {
                 }
             }
         }
-        Commands::Attach(opt) => {
-            info!("Attach to `{}`", opt.name);
+        Commands::Wrap(opt) => {
             todo!()
-        }
-        Commands::Run(opt) => {
-            info!("Starting `{}`, `{:?}`", opt.name, opt.command);
-            let config = Config::build();
-            let root_path = config.get_container_rootfs(&opt.name);
-            let mut cbox = Container::new(&root_path);
-            cbox.start(&opt.command[0], &opt.command[1..]);
         }
         Commands::Exec(_) => todo!(),
         Commands::Start(_) => todo!(),
+        Commands::Cmon(_) => todo!(),
     }
 }

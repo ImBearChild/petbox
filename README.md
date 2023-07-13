@@ -1,6 +1,8 @@
 PetBox
 ====
 
+THIS PROJECT IS INCOMPLETE AND IN PRE-ALPHA STAGE! PLEASE DO NOT USE IT UNLESS YOU KNOW WHAT YOU ARE DOING. Command and API may change without warning or sign! And even this README file shows a command usage here, it may be WRONG.
+
 Petbox is a lightweight unprivileged container tool. Its main goal is to provide a configurable container runtime [^container_runtime] for pet containers.
 
 Why PetBox
