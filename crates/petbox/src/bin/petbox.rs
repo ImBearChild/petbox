@@ -49,6 +49,7 @@ enum Commands {
 
 #[derive(Subcommand)]
 enum Wrap {
+
     
 }
 
@@ -144,25 +145,7 @@ fn main() {
         Commands::Create(opt) => {
             let config = Config::build();
             let root_path = config.get_container_rootfs(&opt.name);
-            let root = container::Rootfs::new(&root_path);
-            info!("Creating conatiner...");
-            trace!("path:{:?},tar_file:{:?}", root_path, opt.source);
-            match &opt.enter_ns {
-                true => {
-                    match root.install_rootfs_enter_ns("/bin/bash") {
-                        Ok(_) => {}
-                        Err(e) => error!("Command failed: {e}"),
-                    };
-                }
-                false => {
-                    match root.install_rootfs_from_tar(Path::new(&opt.source)) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            error!("Failed to extract rootfs: {e}")
-                        }
-                    };
-                }
-            }
+            todo!()
         }
         Commands::Wrap(opt) => {
             todo!()
