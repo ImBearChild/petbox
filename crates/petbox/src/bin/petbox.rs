@@ -2,7 +2,6 @@
 extern crate log;
 use clap::{Args, Parser, Subcommand};
 use petbox::config::Config;
-use petbox::container::{self, Container};
 use std::path::Path;
 #[cfg(debug_assertions)]
 const DEBUG_ENV: bool = true;
