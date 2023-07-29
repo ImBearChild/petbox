@@ -2,7 +2,6 @@
 extern crate log;
 use clap::{Args, Parser, Subcommand};
 use petbox::config::Config;
-use petbox::container::{self, Container};
 use std::path::Path;
 #[cfg(debug_assertions)]
 const DEBUG_ENV: bool = true;
@@ -21,19 +20,23 @@ enum Commands {
     /// Create new petbox rootfs container
     Create(Create),
 
-    #[command()]
-    /// Run a command in a petbox container
+    #[command(subcommand)]
+    /// Low-level container runtime
     ///
     /// Run a process in a petbox container with new namespace
     /// This sub-command will always create a new namespace, so you may not
     /// want to use this command directly
-    Run(Run),
+    Wrap(Wrap),
 
     #[command()]
     /// Start a container and put it in background
-    ///
-    /// You may not want to use this command directly
     Start(Start),
+
+    #[command(subcommand)]
+    /// Low-level container monitor utility
+    /// 
+    /// You may not want to use this command directly
+    Cmon(Cmon),
 
     #[command()]
     /// Run a program inside a a petbox container
@@ -41,6 +44,17 @@ enum Commands {
     /// This sub-command will try to use existent namespace,
     /// and will start one when appropriate
     Exec(Exec),
+}
+
+#[derive(Subcommand)]
+enum Wrap {
+
+    
+}
+
+#[derive(Subcommand)]
+enum Cmon {
+    
 }
 
 #[derive(Args)]
@@ -130,38 +144,13 @@ fn main() {
         Commands::Create(opt) => {
             let config = Config::build();
             let root_path = config.get_container_rootfs(&opt.name);
-            let root = container::Rootfs::new(&root_path);
-            info!("Creating conatiner...");
-            trace!("path:{:?},tar_file:{:?}", root_path, opt.source);
-            match &opt.enter_ns {
-                true => {
-                    match root.install_rootfs_enter_ns("/bin/bash") {
-                        Ok(_) => {}
-                        Err(e) => error!("Command failed: {e}"),
-                    };
-                }
-                false => {
-                    match root.install_rootfs_from_tar(Path::new(&opt.source)) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            error!("Failed to extract rootfs: {e}")
-                        }
-                    };
-                }
-            }
-        }
-        Commands::Attach(opt) => {
-            info!("Attach to `{}`", opt.name);
             todo!()
         }
-        Commands::Run(opt) => {
-            info!("Starting `{}`, `{:?}`", opt.name, opt.command);
-            let config = Config::build();
-            let root_path = config.get_container_rootfs(&opt.name);
-            let mut cbox = Container::new(&root_path);
-            cbox.start(&opt.command[0], &opt.command[1..]);
+        Commands::Wrap(opt) => {
+            todo!()
         }
         Commands::Exec(_) => todo!(),
         Commands::Start(_) => todo!(),
+        Commands::Cmon(_) => todo!(),
     }
 }

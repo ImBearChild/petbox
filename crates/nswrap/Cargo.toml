@@ -1,0 +1,21 @@
+[package]
+name = "nswrap"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+getset = "0.1"
+derive_builder = "0.12"
+nix = { version = "^0.26", features = ["user", "mount"] }
+rustix =  { version = "0.38", features = ["process","thread"] }
+xdg = "^2.1"
+thiserror = "1.0"
+libc = "0.2"
+bitflags = "2.3.3"
+linux-raw-sys = "0.4.3"
+# educe = { version = "*", features = [
+#     "Debug",
+#     "Default",
+# ], default-features = false }
